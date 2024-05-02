@@ -86,16 +86,19 @@ export class Notification {
   }
 
   public static async markTheMessage(
-    data: sentNotificationsToAllType
-  ): Promise<string> {
-    const findMessage = await NotificationModel.findOneAndUpdate(data, {
-      marked: true,
-    });
+    objectId: string 
+): Promise<string> {
+    const findMessage = await NotificationModel.findOneAndUpdate(
+        { _id: objectId }, // Query to find the document by _id
+        { marked: true }, // Update operation to set marked to true
+        { new: true } // Option to return the updated document
+    );
 
     if (!findMessage) {
-      return "Message doesn't exist";
+        return "Message doesn't exist";
     }
 
     return "Message marked successfully";
-  }
+}
+
 }

@@ -62,10 +62,11 @@ class Notification {
             throw new Error("Failed to send notifications to all");
         }
     }
-    static async markTheMessage(data) {
-        const findMessage = await notification_1.NotificationModel.findOneAndUpdate(data, {
-            marked: true,
-        });
+    static async markTheMessage(objectId) {
+        const findMessage = await notification_1.NotificationModel.findOneAndUpdate({ _id: objectId }, // Query to find the document by _id
+        { marked: true }, // Update operation to set marked to true
+        { new: true } // Option to return the updated document
+        );
         if (!findMessage) {
             return "Message doesn't exist";
         }
