@@ -135,6 +135,38 @@ class Class {
         }
         return overallAttendance;
     }
+    static async procentageForUser(data) {
+        const user = await user_1.UserData.getUserByIDD(data.studentId);
+        if (!user) {
+            throw new exception_1.BadRequestException("User not found");
+        }
+        const cls = await class_1.ClassData.getClassByName(data.className);
+        const weeksInSemester = 15;
+        if (!cls) {
+            throw new exception_1.BadRequestException(`Class ${cls} not found`);
+        }
+        const totalHoursInSemester = cls.schedule.lectureHours + cls.schedule.practiceHours;
+        const attendanceRecords = cls.attendance.filter((record) => record.studentId === data.studentId);
+        const attendedLessons = attendanceRecords.filter((record) => record.attended === AttendanceStatus.Attended).length;
+        const absentLessons = attendanceRecords.filter((record) => record.attended === AttendanceStatus.Absent).length;
+        const permittedLessons = attendanceRecords.filter((record) => record.attended === AttendanceStatus.Permitted).length;
+        const manualLessons = attendanceRecords.filter((record) => record.attended === AttendanceStatus.Manual).length;
+        const overallAttendancePercentage = totalHoursInSemester === 0
+            ? "0"
+            : ((totalHoursInSemester / weeksInSemester) * absentLessons).toFixed(2);
+        const absentPresentage = parseFloat(overallAttendancePercentage);
+        return {
+            Procentage: absentPresentage,
+            attendedLessons: attendedLessons,
+            absentLessons: absentLessons,
+            premittedLessons: permittedLessons,
+            manualLessons: manualLessons,
+            courseName: cls.courseName,
+            totalHours: cls.schedule.lectureHours + cls.schedule.lectureHours,
+            studentName: user.name,
+            studentSurname: user.surName
+        };
+    }
 }
 exports.Class = Class;
 //# sourceMappingURL=index.js.map

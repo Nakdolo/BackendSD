@@ -16,8 +16,13 @@ class ClassController {
         this.router.post("/class/students", this.students);
         this.router.post("/class/attend", this.attend);
         this.router.post("/class/procentage", this.procentage);
+        this.router.post("/class/procentageForUser", this.procentageForUser);
         this.router.post("/class/myList", this.myList);
         this.router.post("/class/getClass", this.getClass);
+    }
+    async procentageForUser(req, res) {
+        const result = await class_1.Class.procentageForUser(req.body);
+        res.status(200).send(result);
     }
     async create(req, res) {
         const result = await class_1.Class.createClass(req.body);
