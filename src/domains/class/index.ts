@@ -189,7 +189,7 @@ export class Class {
         existingSchedule.endTimeLecture
       )
     ) {
-      return true; 
+      return true;
     }
     if (
       isOverlapping(
@@ -272,8 +272,10 @@ export class Class {
       }
     }
 
+    user.clases.push(data.className);
     cls.students.push(data.studentId);
     await cls.save();
+    await user.save();
 
     return { message: "Student successfully registered to class" };
   }

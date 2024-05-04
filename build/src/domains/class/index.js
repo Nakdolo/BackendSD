@@ -59,15 +59,13 @@ class Class {
         return cls;
     }
     static hasTimeConflictForCreate(newSchedule, existingSchedule) {
-        // Helper function to convert time string to minutes
         function timeToMinutes(time) {
             const [hours, minutes] = time.split(":").map(Number);
             return hours * 60 + minutes;
         }
-        // Helper function to check time overlap
         function isOverlapping(newDay, newStart, newEnd, existingDay, existingStart, existingEnd) {
             if (newDay !== existingDay) {
-                return false; // No conflict if they are on different days
+                return false;
             }
             const startNew = timeToMinutes(newStart);
             const endNew = timeToMinutes(newEnd);
@@ -75,15 +73,13 @@ class Class {
             const endExisting = timeToMinutes(existingEnd);
             return !(endNew <= startExisting || startNew >= endExisting);
         }
-        // Check for lecture overlap
         if (isOverlapping(newSchedule.dayOfWeekLecture, newSchedule.startTimeLecture, newSchedule.endTimeLecture, existingSchedule.dayOfWeekLecture, existingSchedule.startTimeLecture, existingSchedule.endTimeLecture)) {
-            return true; // There is a conflict in lecture times
+            return true;
         }
-        // Check for practice overlap
         if (isOverlapping(newSchedule.dayOfWeekPractice, newSchedule.startTimePractice, newSchedule.endTimePractice, existingSchedule.dayOfWeekPractice, existingSchedule.startTimePractice, existingSchedule.endTimePractice)) {
-            return true; // There is a conflict in practice times
+            return true;
         }
-        return false; // No conflicts found
+        return false;
     }
     static async createClass(data) {
         const existingClass = await class_1.ClassData.getClassByName(data.className);
@@ -133,8 +129,10 @@ class Class {
                 throw new exception_1.BadRequestException("Scheduling conflict with another class");
             }
         }
+        user.clases.push(data.className);
         cls.students.push(data.studentId);
         await cls.save();
+        await user.save();
         return { message: "Student successfully registered to class" };
     }
     static hasTimeConflict(newClass, existingClass) {
