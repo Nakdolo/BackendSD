@@ -7,13 +7,13 @@ export type ClassCreateType = {
   className: string;
   courseName: string;
   schedule: {
-    dayOfWeekLecture: string;
+    dayOfWeekLecture: DayOfWeek;
     startTimeLecture: string;
     endTimeLecture: string;
     lectureHours: number;
     officeLecture: string;
 
-    dayOfWeekPractice: string;
+    dayOfWeekPractice: DayOfWeek;
     startTimePractice: string;
     endTimePractice: string;
     practiceHours: number;
@@ -137,21 +137,99 @@ export class Class {
     }
     return cls;
   }
+
+  private static hasTimeConflictForCreate(
+    newSchedule: {
+      dayOfWeekLecture: DayOfWeek;
+      startTimeLecture: string;
+      endTimeLecture: string;
+      dayOfWeekPractice: DayOfWeek;
+      startTimePractice: string;
+      endTimePractice: string;
+    },
+    existingSchedule: {
+      dayOfWeekLecture: DayOfWeek;
+      startTimeLecture: string;
+      endTimeLecture: string;
+      dayOfWeekPractice: DayOfWeek;
+      startTimePractice: string;
+      endTimePractice: string;
+    }
+  ): boolean {
+    function timeToMinutes(time: string): number {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+
+    function isOverlapping(
+      newDay: DayOfWeek,
+      newStart: string,
+      newEnd: string,
+      existingDay: DayOfWeek,
+      existingStart: string,
+      existingEnd: string
+    ): boolean {
+      if (newDay !== existingDay) {
+        return false;
+      }
+      const startNew = timeToMinutes(newStart);
+      const endNew = timeToMinutes(newEnd);
+      const startExisting = timeToMinutes(existingStart);
+      const endExisting = timeToMinutes(existingEnd);
+      return !(endNew <= startExisting || startNew >= endExisting);
+    }
+
+    if (
+      isOverlapping(
+        newSchedule.dayOfWeekLecture,
+        newSchedule.startTimeLecture,
+        newSchedule.endTimeLecture,
+        existingSchedule.dayOfWeekLecture,
+        existingSchedule.startTimeLecture,
+        existingSchedule.endTimeLecture
+      )
+    ) {
+      return true; 
+    }
+    if (
+      isOverlapping(
+        newSchedule.dayOfWeekPractice,
+        newSchedule.startTimePractice,
+        newSchedule.endTimePractice,
+        existingSchedule.dayOfWeekPractice,
+        existingSchedule.startTimePractice,
+        existingSchedule.endTimePractice
+      )
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
   public static async createClass(
     data: ClassCreateType
   ): Promise<ClassReturnType> {
     const existingClass = await ClassData.getClassByName(data.className);
-
     if (existingClass) {
       throw new BadRequestException("Class with this name already exists");
     }
 
     const teacher = await UserData.getUserByIDD(data.ID);
-
     if (!teacher) {
       throw new BadRequestException("Teacher doesn't exist");
     }
 
+    const teacherClasses = await ClassModel.find({
+      teacher: teacher.name,
+    }).exec();
+    for (const existingClass of teacherClasses) {
+      if (
+        this.hasTimeConflictForCreate(data.schedule, existingClass.schedule)
+      ) {
+        throw new BadRequestException("Scheduling conflict with another class");
+      }
+    }
     teacher.clases.push(data.className);
     await teacher.save();
 

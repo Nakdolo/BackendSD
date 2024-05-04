@@ -58,6 +58,33 @@ class Class {
         }
         return cls;
     }
+    static hasTimeConflictForCreate(newSchedule, existingSchedule) {
+        // Helper function to convert time string to minutes
+        function timeToMinutes(time) {
+            const [hours, minutes] = time.split(":").map(Number);
+            return hours * 60 + minutes;
+        }
+        // Helper function to check time overlap
+        function isOverlapping(newDay, newStart, newEnd, existingDay, existingStart, existingEnd) {
+            if (newDay !== existingDay) {
+                return false; // No conflict if they are on different days
+            }
+            const startNew = timeToMinutes(newStart);
+            const endNew = timeToMinutes(newEnd);
+            const startExisting = timeToMinutes(existingStart);
+            const endExisting = timeToMinutes(existingEnd);
+            return !(endNew <= startExisting || startNew >= endExisting);
+        }
+        // Check for lecture overlap
+        if (isOverlapping(newSchedule.dayOfWeekLecture, newSchedule.startTimeLecture, newSchedule.endTimeLecture, existingSchedule.dayOfWeekLecture, existingSchedule.startTimeLecture, existingSchedule.endTimeLecture)) {
+            return true; // There is a conflict in lecture times
+        }
+        // Check for practice overlap
+        if (isOverlapping(newSchedule.dayOfWeekPractice, newSchedule.startTimePractice, newSchedule.endTimePractice, existingSchedule.dayOfWeekPractice, existingSchedule.startTimePractice, existingSchedule.endTimePractice)) {
+            return true; // There is a conflict in practice times
+        }
+        return false; // No conflicts found
+    }
     static async createClass(data) {
         const existingClass = await class_1.ClassData.getClassByName(data.className);
         if (existingClass) {
@@ -66,6 +93,14 @@ class Class {
         const teacher = await user_1.UserData.getUserByIDD(data.ID);
         if (!teacher) {
             throw new exception_1.BadRequestException("Teacher doesn't exist");
+        }
+        const teacherClasses = await class_1.ClassModel.find({
+            teacher: teacher.name,
+        }).exec();
+        for (const existingClass of teacherClasses) {
+            if (this.hasTimeConflictForCreate(data.schedule, existingClass.schedule)) {
+                throw new exception_1.BadRequestException("Scheduling conflict with another class");
+            }
         }
         teacher.clases.push(data.className);
         await teacher.save();
