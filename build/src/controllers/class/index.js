@@ -19,6 +19,11 @@ class ClassController {
         this.router.post("/class/procentageForUser", this.procentageForUser);
         this.router.post("/class/myList", this.myList);
         this.router.post("/class/getClass", this.getClass);
+        this.router.post("/class/attendanceForUser", this.attendanceUser);
+    }
+    async attendanceUser(req, res) {
+        const result = await class_1.Class.attendanceForUser(req.body);
+        res.status(200).send(result);
     }
     async procentageForUser(req, res) {
         const result = await class_1.Class.procentageForUser(req.body);

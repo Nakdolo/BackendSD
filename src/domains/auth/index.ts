@@ -104,7 +104,6 @@ export class Auth {
     } else if (idRegex.test(input)) {
       return { type: "ID", value: { ID: input } };
     } else {
-      // Handling name and surname requires another approach
       const parts = input.split(" ");
       if (parts.length === 2) {
         return {

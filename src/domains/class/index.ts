@@ -22,6 +22,26 @@ export type ClassCreateType = {
   ects: number;
 };
 
+export type attendanceForUserType = {
+  attendance: {
+    studentId: string;
+    attended: AttendanceStatus;
+    typeOfClass: TypeOfClass;
+    date: Date;
+    week: number;
+  }[];
+};
+
+enum DayOfWeek {
+  Monday = "Monday",
+  Tuesday = "Tuesday",
+  Wednesday = "Wednesday",
+  Thursday = "Thursday",
+  Friday = "Friday",
+  Saturday = "Saturday",
+  Sunday = "Sunday",
+}
+
 enum TypeOfClass {
   Lecture = "Lecture",
   Practice = "Practice",
@@ -69,15 +89,43 @@ export type ProcentageForUserType = {
 };
 
 export type ProcentageForUserReturnType = {
-  Procentage : number;
-  attendedLessons : number;
-  absentLessons : number;
-  premittedLessons : number;
-  manualLessons : number;
-  totalHours : number;
-  courseName : string;
-  studentName : string;
-  studentSurname : string;
+  Procentage: number;
+  attendedLessons: number;
+  absentLessons: number;
+  premittedLessons: number;
+  manualLessons: number;
+  totalHours: number;
+  courseName: string;
+  studentName: string;
+  studentSurname: string;
+};
+
+enum SessionType {
+  Lecture = "Lecture",
+  Practice = "Practice",
+}
+
+function getSessionDay(classData: IClass, type: SessionType): DayOfWeek {
+  return type === SessionType.Lecture
+    ? classData.schedule.dayOfWeekLecture
+    : classData.schedule.dayOfWeekPractice;
+}
+
+function getSessionStartTime(classData: IClass, type: SessionType): string {
+  return type === SessionType.Lecture
+    ? classData.schedule.startTimeLecture
+    : classData.schedule.startTimePractice;
+}
+
+function getSessionEndTime(classData: IClass, type: SessionType): string {
+  return type === SessionType.Lecture
+    ? classData.schedule.endTimeLecture
+    : classData.schedule.endTimePractice;
+}
+
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
 }
 
 export class Class {
@@ -120,32 +168,62 @@ export class Class {
     return { message: "Class successfully created" };
   }
 
-  public static async registerToClass(
-    data: RegisterToClassType
-  ): Promise<ClassReturnType> {
+  public static async registerToClass(data: {
+    studentId: string;
+    className: string;
+  }): Promise<{ message: string }> {
+    // Fetch class and user documents
     const cls = await ClassData.getClassByName(data.className);
     const user = await UserData.getUserByIDD(data.studentId);
 
     if (!user) {
       throw new BadRequestException("User not found");
     }
-
     if (!cls) {
       throw new BadRequestException("Class not found");
     }
-
 
     if (cls.students.includes(data.studentId)) {
       throw new BadRequestException("Student already registered");
     }
 
-    user.clases.push(data.className);
-    cls.students.push(data.studentId);
+    for (const className of user.clases) {
+      const existingClass = await ClassData.getClassByName(className);
+      if (existingClass && this.hasTimeConflict(cls, existingClass)) {
+        throw new BadRequestException("Scheduling conflict with another class");
+      }
+    }
 
-    await user.save();
+    cls.students.push(data.studentId);
     await cls.save();
 
     return { message: "Student successfully registered to class" };
+  }
+
+  private static hasTimeConflict(
+    newClass: IClass,
+    existingClass: IClass
+  ): boolean {
+    return [SessionType.Lecture, SessionType.Practice].some((sessionType) => {
+      const dayNew = getSessionDay(newClass, sessionType);
+      const startNew = timeToMinutes(
+        getSessionStartTime(newClass, sessionType)
+      );
+      const endNew = timeToMinutes(getSessionEndTime(newClass, sessionType));
+
+      const dayExisting = getSessionDay(existingClass, sessionType);
+      const startExisting = timeToMinutes(
+        getSessionStartTime(existingClass, sessionType)
+      );
+      const endExisting = timeToMinutes(
+        getSessionEndTime(existingClass, sessionType)
+      );
+
+      return (
+        dayNew === dayExisting &&
+        !(endNew <= startExisting || startNew >= endExisting)
+      );
+    });
   }
 
   public static async listClasses(): Promise<IClass[]> {
@@ -318,15 +396,32 @@ export class Class {
     const absentPresentage = parseFloat(overallAttendancePercentage);
 
     return {
-      Procentage : absentPresentage,
+      Procentage: absentPresentage,
       attendedLessons: attendedLessons,
       absentLessons: absentLessons,
       premittedLessons: permittedLessons,
-      manualLessons : manualLessons,
+      manualLessons: manualLessons,
       courseName: cls.courseName,
-      totalHours : cls.schedule.lectureHours + cls.schedule.lectureHours,
-      studentName : user.name,
-      studentSurname : user.surName
+      totalHours: cls.schedule.lectureHours + cls.schedule.lectureHours,
+      studentName: user.name,
+      studentSurname: user.surName,
     };
+  }
+
+  public static async attendanceForUser(
+    data: ProcentageForUserType
+  ): Promise<attendanceForUserType> {
+    const user = await UserData.getUserByIDD(data.studentId);
+    const cls = await ClassData.getClassByName(data.className);
+
+    if (!cls || !user) {
+      throw new BadRequestException("Class or user doesn't exist");
+    }
+
+    const userAttendances = cls.attendance.filter(
+      (attendance) => attendance.studentId === data.studentId
+    );
+
+    return { attendance: userAttendances };
   }
 }
