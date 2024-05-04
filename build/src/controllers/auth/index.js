@@ -13,7 +13,7 @@ class AuthController {
     initRoutes() {
         this.router.post("/auth/login", auth_2.AuthMiddleware.verifyLoginData, this.login);
         this.router.post("/auth/signup", auth_2.AuthMiddleware.verifySignupData, this.registration);
-        this.router.post("/auth/password_recovery", auth_2.AuthMiddleware.verifyRecovoryData, this.passwordRecovery);
+        this.router.post("/auth/password_recovery", this.passwordRecovery);
         this.router.post("/auth/reset_password", this.resetPassword);
         this.router.get("/", this.test);
         this.router.post("/add", auth_2.AuthMiddleware.verifySignupData, this.addUser);

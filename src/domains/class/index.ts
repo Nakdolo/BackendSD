@@ -134,6 +134,7 @@ export class Class {
       throw new BadRequestException("Class not found");
     }
 
+
     if (cls.students.includes(data.studentId)) {
       throw new BadRequestException("Student already registered");
     }

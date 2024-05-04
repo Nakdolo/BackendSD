@@ -17,20 +17,17 @@ export type AuthResultType = {
   phone: String;
 };
 
-export type findResultType = {
-  userEmail: String;
-  userRole: String;
-  UserName: String;
-  UserSurname: String;
-  ID: String;
-  phone: String;
+export type FindDataType = {
+  ID: string;
 };
 
-export type findDataType = {
+export type FindResultType = {
   ID: string;
-  email: string;
-  Name: string;
-  surName: string;
+  userEmail: string;
+  userRole: string;
+  userName: string;
+  userSurname: string;
+  phone: string;
 };
 
 export type AuthAddingResultType = {
@@ -98,8 +95,36 @@ export class Auth {
     };
   }
 
-  public static async findUser(data: findDataType): Promise<findResultType> {
-    const user = await UserData.getUserByIDD(data.ID);
+  private static classifyInput(input: string): { type: string; value: any } {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const idRegex = /^\d+$/;
+
+    if (emailRegex.test(input)) {
+      return { type: "email", value: { email: input } };
+    } else if (idRegex.test(input)) {
+      return { type: "ID", value: { ID: input } };
+    } else {
+      // Handling name and surname requires another approach
+      const parts = input.split(" ");
+      if (parts.length === 2) {
+        return {
+          type: "nameAndSurname",
+          value: { name: parts[0], surName: parts[1] },
+        };
+      }
+    }
+
+    return { type: "unknown", value: null };
+  }
+
+  public static async findUser(data: FindDataType): Promise<FindResultType> {
+    const result = this.classifyInput(data.ID);
+
+    if (result.type === "unknown") {
+      throw new BadRequestException("User doesn't exist");
+    }
+
+    const user = await UserModel.findOne(result.value);
 
     if (!user) {
       throw new BadRequestException("User not found");
@@ -109,8 +134,8 @@ export class Auth {
       ID: user.ID,
       userEmail: user.email,
       userRole: user.userRole,
-      UserName: user.name,
-      UserSurname: user.surName,
+      userName: user.name,
+      userSurname: user.surName,
       phone: user.phone,
     };
   }

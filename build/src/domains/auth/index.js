@@ -39,8 +39,33 @@ class Auth {
             ID: user.ID,
         };
     }
+    static classifyInput(input) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const idRegex = /^\d+$/;
+        if (emailRegex.test(input)) {
+            return { type: "email", value: { email: input } };
+        }
+        else if (idRegex.test(input)) {
+            return { type: "ID", value: { ID: input } };
+        }
+        else {
+            // Handling name and surname requires another approach
+            const parts = input.split(" ");
+            if (parts.length === 2) {
+                return {
+                    type: "nameAndSurname",
+                    value: { name: parts[0], surName: parts[1] },
+                };
+            }
+        }
+        return { type: "unknown", value: null };
+    }
     static async findUser(data) {
-        const user = await user_1.UserData.getUserByIDD(data.ID);
+        const result = this.classifyInput(data.ID);
+        if (result.type === "unknown") {
+            throw new exception_1.BadRequestException("User doesn't exist");
+        }
+        const user = await user_1.UserModel.findOne(result.value);
         if (!user) {
             throw new exception_1.BadRequestException("User not found");
         }
@@ -48,8 +73,8 @@ class Auth {
             ID: user.ID,
             userEmail: user.email,
             userRole: user.userRole,
-            UserName: user.name,
-            UserSurname: user.surName,
+            userName: user.name,
+            userSurname: user.surName,
             phone: user.phone,
         };
     }

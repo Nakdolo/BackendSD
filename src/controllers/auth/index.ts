@@ -20,7 +20,6 @@ export class AuthController {
     );
     this.router.post(
       "/auth/password_recovery",
-      AuthMiddleware.verifyRecovoryData,
       this.passwordRecovery
     );
     this.router.post("/auth/reset_password", this.resetPassword);
