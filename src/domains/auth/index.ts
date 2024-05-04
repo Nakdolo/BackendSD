@@ -25,8 +25,8 @@ export type FindResultType = {
   ID: string;
   userEmail: string;
   userRole: string;
-  userName: string;
-  userSurname: string;
+  UserName: string;
+  UserSurname: string;
   phone: string;
 };
 
@@ -133,8 +133,8 @@ export class Auth {
       ID: user.ID,
       userEmail: user.email,
       userRole: user.userRole,
-      userName: user.name,
-      userSurname: user.surName,
+      UserName: user.name,
+      UserSurname: user.surName,
       phone: user.phone,
     };
   }

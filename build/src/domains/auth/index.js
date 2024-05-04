@@ -72,8 +72,8 @@ class Auth {
             ID: user.ID,
             userEmail: user.email,
             userRole: user.userRole,
-            userName: user.name,
-            userSurname: user.surName,
+            UserName: user.name,
+            UserSurname: user.surName,
             phone: user.phone,
         };
     }
